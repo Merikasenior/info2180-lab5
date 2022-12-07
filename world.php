@@ -5,57 +5,55 @@ $password = 'password123';
 $dbname = 'world';
 
 $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
-if(isset($_GET)){
-$country = filter_var($_GET['country'],FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-$context =filter_var($_GET['context'],FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
- 
-if($context=="cities"){
-   
-$stmt = $conn->query("SELECT cities.name, cities.district, cities.population FROM cities JOIN countries ON cities.country_code = countries.code WHERE countries.name LIKE \"%$country%\" ORDER BY countries.name ASC");
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
- }else{
-     $countrieswhere = $conn->query("SELECT * FROM countries WHERE name LIKE '%$country%'");
-     $whereresults= $countrieswhere->fetchAll(PDO::FETCH_ASSOC);
- }
+if($_SERVER['REQUEST_METHOD']=== 'GET'){
+  $country = filter_var($_GET['country'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+  if(isset($country) or strlen($country)!==0){
+    if((isset($country) or strlen($country)!==0) and (!isset($_GET['context']) or strlen($_GET['context'])===0)){
+    $stmt = $conn->query("SELECT * FROM countries WHERE name LIKE '%$country%'");
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo "<table>";
+    echo "<tr>";
+    echo "<th>Country Name</th>";
+    echo "<th>Continent</th>";
+    echo "<th>Independence</th>";
+    echo "<th>Head of State</th>";
+    echo "<tr>";
+    foreach($results as $row){
+     $name = $row['name'];
+     $continent = $row['continent'];
+     $independence = $row['independence_year'];
+     $hos = $row['head_of_state'];
+     echo "<tr>";
+     echo "<td>$name</td>";
+     echo "<td>$continent</td>";
+     echo "<td>$independence</td>";
+     echo "<td>$hos</td>";
+     echo "</tr>";
+    }
+    echo "</table>";
+
+  }else{
+    $stmt = $conn->query("SELECT c.name as city, c.district, c.population, cs.name as country FROM cities c join countries cs on c.country_code=cs.code WHERE cs.name='$country'");
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo "<table>";
+    echo "<tr>";
+    echo "<th>Name</th>";
+    echo "<th>District</th>";
+    echo "<th>Population</th>";
+    echo "</tr>";
+    foreach($results as $row){
+      $city = $row['city'];
+      $district = $row['district'];
+      $population = $row['population'];
+      echo "<tr>";
+      echo "<td>$city</td>";
+      echo "<td>$district</td>";
+      echo "<td>$population</td>";
+      echo "</tr>";
+    }
+    echo "</table>";
+  }
 }
-
- 
-
-?>
- <table>
-   
-    
-        <?php if($context=="cities"): ?>
-         echo <tr>
-                <th> Country Name</th>
-                <th> District</th>
-                <th> Population</th>
-        </tr>;
-                
-            
-                <?php foreach ($results as $row): ?>
-                <tr>
-                   echo <td><?= $row['name']; ?></td>
-                    <td><?= $row['district']; ?></td>
-                    <td><?=$row['population']; ?></td>
-                </tr>
-            <?php endforeach; ?>
-   
-        <?php else: ?>
-         
-                <th> Country Name</th>
-                <th> Continent</th>
-                <th> Independence Year</th>
-                <th> Head of State</th>
-           
-            <?php foreach ($whereresults as $row): ?>
-                <tr>
-                    <td><?= $row['name']; ?></td>
-                    <td><?= $row['continent']; ?></td>
-                    <td><?=$row['independence_year']; ?></td>
-                    <td><?= $row['head_of_state']; ?> </td>
-               echo </tr>
-            <?php endforeach; ?>
-        <?php endif; ?>
-   
- echo</table>
+}
